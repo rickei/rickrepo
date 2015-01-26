@@ -1,10 +1,10 @@
-at nagios server (192.168.234.110)
+at nagios server (e.g. 192.168.234.110)
 enable passwordless ssh login to esxi
 
 su - nagios -s /bin/bash
 
 ssh-keygen -t dsa
-cat ~/.ssh/id_dsa.pub |ssh root@192.168.234.245 'cat >> /etc/ssh/keys-root/authorized_keys'
+cat ~/.ssh/id_dsa.pub |ssh root@[IPaddress_of_esxi] 'cat >> /etc/ssh/keys-root/authorized_keys'
 ** repeat to all vm host
 
 copy check_vmhost_datastore.sh to /usr/lib64/nagios/plugins
