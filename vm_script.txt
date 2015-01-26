@@ -1,0 +1,89 @@
+getvms.sh 10 datastore187_testcloud CentOS-PerfClient-v1 datastore1 token_testing123 "192.168.240. 192.168.241. 192.168.242. 192.168.243. 192.168.244. 192.168.245. 192.168.246. 192.168.247. 192.168.248. 192.168.249. 192.168.250. 192.168.251. 192.168.252. 192.168.253. 192.168.254. 192.168.255." true
+
+
+ "192.168.240. 192.168.241. 192.168.242. 192.168.243. 192.168.244. 192.168.245. 192.168.246. 192.168.247. 192.168.248. 192.168.249. 192.168.250. 192.168.251. 192.168.252. 192.168.253. 192.168.254. 192.168.255."
+ 
+ 
+ 
+ 
+ 
+ getvms.sh 10 datastore187_testcloud CentOS-PerfClient-v1 datastore1 token_testing123 <internal management subnet> true
+[10:05:05 AM] Kevin Chiu: in which <internal management subnet> should be:
+[10:05:17 AM] Kevin Chiu: "192.168.240. 192.168.241. 192.168.242. 192.168.243. 192.168.244. 192.168.245. 192.168.246. 192.168.247. 192.168.248. 192.168.249. 192.168.250. 192.168.251. 192.168.252. 192.168.253. 192.168.254. 192.168.255."
+
+
+------------------------------------------------------
+real test :
+
+ ./getvms.sh 100 datastore187_testcloud CentOS-PerfClient-v1 datastore1 token_testing123 "192.168.240. 192.168.241. 192.168.242. 192.168.243. 192.168.244. 192.168.245. 192.168.246. 192.168.247. 192.168.248. 192.168.249. 192.168.250. 192.168.251. 192.168.252. 192.168.253. 192.168.254. 192.168.255." true
+
+
+ ./delvms.sh token_testing123 datastore1
+
+-------------------------------------------------------------
+ 
+ 
+##get list of vmid
+ 
+vim-cmd vmsvc/getallvms |awk '{print $1}'
+
+## get list of vmid , ignore seed ( CentOS-PerfClient-v1)
+vim-cmd vmsvc/getallvms |grep -v Perf
+
+
+## get vmid of prime client
+vim-cmd vmsvc/getallvms |grep -i prime |awk '{print $1}'
+
+## get list of vmid, no seed and no prime
+
+vim-cmd vmsvc/getallvms |grep -v 'Prime\|Perf'|awk '{print $1}' > vmidlist
+
+## get ipaddress of a vm, exclude mac address
+
+vim-cmd vmsvc/get.guest $VMID |grep  "ipAddress = \"" |grep -v :
+
+
+------------------------------------
+
+
+# find ipaddress of guest from vmidlist
+# trim space and remove line with mac address
+
+while read line
+do
+ vim-cmd vmsvc/get.guest $line |grep  "ipAddress = \"" |grep -v :|sed '
+ /^$/d;s/[[:blank:]]//g' >> iplist
+done < "vmidlist"
+
+
+
+
+------------------------------
+## remove duplicate line and useless char
+
+cat iplist |sort|uniq |sed 's/ipAddress//g'|sed 's/"//g'|sed 's/=//g'|sed 's/,//g'
+
+
+-------------------------------------------------------------------
+full script :
+
+
+## get a list of vmid, exclude prime client and seed
+vim-cmd vmsvc/getallvms |grep -v 'Prime\|Perf'|awk '{print $1}' > vmidlist
+
+
+# find ipaddress of guest from vmidlist
+# trim space and remove line with mac address
+while read line
+do
+ vim-cmd vmsvc/get.guest $line |grep  "ipAddress = \"" |grep -v :|sed '
+ /^$/d;s/[[:blank:]]//g' >> iplist
+done < "vmidlist"
+
+
+## remove duplicate line and useless char
+
+cat iplist |sort|uniq |sed 's/ipAddress//g'|sed 's/"//g'|sed 's/=//g'|sed 's/,//g' > iplist_2
+
+
+-----------------------------------------------------------------------------

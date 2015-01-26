@@ -1,0 +1,71 @@
+** make sure passwordless to vm host, login as root
+
+cat /root/.ssh/id_rsa.pub |ssh root@192.168.234.181 'cat >> /etc/ssh/keys-root/authorized_keys'
+cat /root/.ssh/id_rsa.pub |ssh root@192.168.234.230 'cat >> /etc/ssh/keys-root/authorized_keys'
+cat /root/.ssh/id_rsa.pub |ssh root@192.168.234.231 'cat >> /etc/ssh/keys-root/authorized_keys'
+cat /root/.ssh/id_rsa.pub |ssh root@192.168.234.244 'cat >> /etc/ssh/keys-root/authorized_keys'
+cat /root/.ssh/id_rsa.pub |ssh root@192.168.234.245 'cat >> /etc/ssh/keys-root/authorized_keys'
+
+***********************
+vmfarmhosts
+192.168.234.181
+192.168.234.230
+192.168.234.231
+192.168.234.244
+192.168.234.245
+
+************************
+
+pscp.pssh -h vmfarmhosts /root/getipaddr.sh /testcloud/getipaddr.sh
+pssh -h vmfarmhosts  -t 0 'cd /testcloud; ./getipaddr.sh'
+pssh -h vmfarmhosts -t 0 -o /root/vmfarm_stdout 'cat /testcloud/iplist_2'
+
+
+
+*********************************
+*** whole script :  vmfarmgetip.sh
+*********************************
+ 
+#!/bin/bash
+
+## file contain the vm hosts
+VMHOST='/root/vmfarmhosts'
+
+## working path
+VMHOST_STDPATH='/root/vmfarm_stdout/'
+
+## Target network to be filter and the ip suffix
+TARGETSUBNET='NETWORK=192.168.240.0'
+IPSUFFIX='/20'
+
+
+
+### push /root/getipaddr.sh to vm host, remove remark when need
+#pscp.pssh -h $VMHOST /root/getipaddr.sh /testcloud/getipaddr.sh
+
+### start getipaddr.sh on each vm host, remove remark when need
+#pssh -h $VMHOST  -t 0 'cd /testcloud; ./getipaddr.sh'
+
+
+### get the output from vm hosts
+## clear old file first
+rm -f $VMHOST_STDPATH*
+pssh -h $VMHOST -t 0 -o $VMHOST_STDPATH 'cat /testcloud/iplist_2'
+
+
+
+while read -r hostline
+do
+        #echo $VMHOST_STDPATH$hostline
+        while read -r ipline
+        do
+                #echo $ipline
+                NETWORK=$(ipcalc -n $ipline$IPSUFFIX)
+                if [ "$NETWORK" == "$TARGETSUBNET" ]; then
+                        echo $ipline >> "${VMHOST_STDPATH}filter${hostline}"
+                fi
+        done < $VMHOST_STDPATH$hostline
+done < $VMHOST
+
+
+
