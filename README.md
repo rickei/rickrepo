@@ -1,4 +1,6 @@
 rickrepo
 ========
 1st repo
-hello world
+
+some old script for reference:wq
+
