@@ -1,0 +1,91 @@
+at nagios server (192.168.234.110)
+enable passwordless ssh login to esxi
+
+su - nagios -s /bin/bash
+
+ssh-keygen -t dsa
+cat ~/.ssh/id_dsa.pub |ssh root@192.168.234.245 'cat >> /etc/ssh/keys-root/authorized_keys'
+** repeat to all vm host
+
+copy check_vmhost_datastore.sh to /usr/lib64/nagios/plugins
+
+-------------------------
+#!/bin/bash
+# Nagios Plugin Bash Script - check_vmhost_datastore1.sh
+# This script checks the usage of datastore1 with the specified WARNING and CRITICAL threshold
+# prerequisite : passwordless ssh login to vm host
+#
+#
+# Check for missing parameters
+if [[ -z "$1" ]] || [[ -z "$2" ]] || [[ -z "$3" ]] || [[ -z "$4" ]]; then
+        echo "Missing parameters! Syntax: ./check_vmhost_datastore1.sh HOST DATASTORE_NAME WARNING_THRESHOLD CRITICAL_THRESHOLD"
+        exit 2
+fi
+
+HOST=$1
+DATASTORE=$2
+WARNING=$3
+CRITICAL=$4
+
+
+# Check datastore1
+
+rs=$(/usr/bin/ssh root@$HOST 'df -h'|/bin/grep $DATASTORE$|/bin/awk '{print "Free",$4, "Total", $2," Used",$5}')
+used_percent=$(echo $rs|/bin/awk '{print $6}'|/bin/sed 's/%//g')
+
+
+
+# Check if used% is lower than WARNING threshold parameter
+if [[ "$used_percent" -lt "$WARNING" ]]; then
+        echo "OK - $rs "
+        exit 0
+fi
+
+# Check if used% is greater than WARNING threshold parameter and lower than CRITICAL threshold parameter
+if [[ "$used_percent" -ge "$WARNING" ]] && [[ "$used_percent" -lt "$CRITICAL" ]] ; then
+        echo "WARNING -$rs "
+        exit 1
+fi
+
+# Check if used% is greater than CRITICAL threshold parameter
+if [[ "$used_percent" -ge "$CRITICAL" ]]; then
+        echo "CRITICAL -$rs "
+        exit 2
+fi
+
+-------------------------
+edit /etc/nagios/objects/commands.cfg
+
+add :
+define command{
+        command_name    check_vmhost_datastore
+        command_line    $USER1$/check_vmhost_datastore.sh "$ARG1$" "$ARG2$" "$ARG3$" "$ARG4$"
+}
+
+edit /etc/nagios/conf.d/esxi01.cfg
+
+add :
+
+define servicegroup{
+        servicegroup_name       datastore
+        alias                   datastore
+}
+
+define service{
+    use                 generic-service
+    hostgroup_name          HK_VM_Farm,HKESXi
+    service_description     Datastore1
+    check_command       check_vmhost_datastore!$HOSTADDRESS$!datastore1!80!95
+    initial_state u
+    max_check_attempts 3
+    check_interval 60
+    retry_interval 3
+    active_checks_enabled 1
+    check_period 24x7
+    register 1
+    servicegroups       datastore
+}
+
+
+
+service nagios restart
