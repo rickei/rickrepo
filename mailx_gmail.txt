@@ -1,0 +1,11 @@
+mailx gmail smtp note 
+
+mkdir ~/.certs
+
+certutil -N -d ~/.certs
+
+wget https://www.geotrust.com/resources/root_certificates/certificates/Equifax_Secure_Certificate_Authority.cer
+
+certutil -d ~/.certs/ -A -t TC -n "Equifax Secure Certificate Authority" -i Equifax_Secure_Certificate_Authority.cer
+
+echo “Mail body” | mailx -v -s "SUBJECT_HERE" -S smtp-use-starttls -S ssl-verify=ignore -S smtp-auth=login -S smtp=smtp.gmail.com:587 -S from=from@gmail.com -S smtp-auth-user=from@gmail.com -S smtp-auth-password="GMAIL_PASSWD"  -S nss-config-dir=~/.certs -a ATTACH_FILE_TO_EMAIL
