@@ -1,0 +1,98 @@
+<!-- inspire from example  http://creativejs.com/2012/01/day-10-drawing-rotated-images-into-canvas
+
+remarks :
+1. the happyface.png is a 100x100px circle pic, so radius is just 50px
+2. it start from x=50 , when hit the right bountry, canvas width 600, it bounce back, vice versa
+    assign stepright ot stepleft (1 or -1) to step , it control the movement direction
+3. when bounce back, it the rotation will change to clockwise or anti-clockwise, depends on the direction
+   'counterstep' control the rotation direction 
+
+ -->
+<!DOCTYPE HTML>
+<html lang="en">
+<meta charset="utf-8">
+<head>
+	<title>How to rotate an image example 1 - translations</title>
+	<style type="text/css">
+		canvas {
+			border : 1px gray solid; 
+			
+		}
+	</style>
+</head>
+<body>
+	<script>
+
+	window.addEventListener("load", init); 
+	
+	var counter = 0,
+		logoImage = new Image(),
+		TO_RADIANS = Math.PI/180, 
+		currentx=50,
+		lastx=currentx,
+		step=1,
+		counterstep=2
+		stepright=1,
+		stepleft=-1;
+	logoImage.src = 'happyface.png';
+
+	var canvas = document.createElement('canvas'); 
+	canvas.width = 600; 
+	canvas.height = 600; 
+	var context = canvas.getContext('2d'); 
+	document.body.appendChild(canvas); 
+
+
+
+	function init(){
+		setInterval(loop, 1000/150); 
+		
+	}
+
+	function loop() { 
+		context.clearRect(0,0,canvas.width, canvas.height); 
+		drawRotatedImage(logoImage,currentx,100,counter); 
+		lastx=currentx;
+		currentx+=step;
+		if (currentx==550 & lastx<currentx){
+			step=stepleft;
+			counterstep=-2;
+		}
+		if (currentx==50 & lastx>currentx){
+			step=stepright;
+			counterstep=2
+		} 
+
+		
+		//drawRotatedImage(logoImage,300,100,counter+90); 
+		//drawRotatedImage(logoImage,500,100,counter+180); 
+		counter+=counterstep; 
+	
+	}
+	
+	
+	function drawRotatedImage(image, x, y, angle) { 
+
+		// save the current co-ordinate system 
+		// before we screw with it
+		context.save(); 
+
+		// move to the middle of where we want to draw our image
+		context.translate(x, y);
+
+		// rotate around that point, converting our 
+		// angle from degrees to radians 
+		context.rotate(angle * TO_RADIANS);
+
+		// draw it up and to the left by half the width
+		// and height of the image 
+		context.drawImage(image, -(image.width/2), -(image.height/2));
+
+		// and restore the co-ords to how they were when we began
+		context.restore(); 
+	}
+	
+
+	</script>
+</body>
+</html>
