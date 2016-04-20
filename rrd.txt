@@ -1,0 +1,33 @@
+example for rrdtool , create network in/out bandwidth graph 
+
+
+CREATE RRD DATABASE :
+----------------------------------
+rrdtool create /root/eth0.rrd DS:in:COUNTER:600:0:10000000000 DS:out:COUNTER:600:0:10000000000 RRA:AVERAGE:0.5:2:800
+
+----------------------------------
+
+
+UPDATE RRD DATABASE script : (put in cron to run every 5 mins)
+----------------------------------
+#!/bin/bash
+incount=$(/sbin/ifconfig eth0 |grep bytes|cut -d':' -f2|cut -d' ' -f1)
+outcount=$(/sbin/ifconfig eth0 |grep bytes|cut -d':' -f3|cut -d' ' -f1)
+
+#echo $incount
+#echo $outcount
+
+rrdupdate /root/eth0.rrd N:$incount:$outcount
+
+----------------------------------
+manually check rrd :
+rrdtool fetch eth0.rrd AVERAGE
+----------------------------------
+
+generate graph :
+----------------------------------
+rrdtool graph /root/ethxxx.png --start $(date -d "12 hour ago" '+%s') --end $(date +%s) --vertical-label bytes DEF:in=/root/eth0.rrd:in:AVERAGE DEF:out=/root/eth0.rrd:out:AVERAGE LINE1:in#336600 LINE2:out#FF0000
+
+----------------------------------
+
+
